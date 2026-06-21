@@ -1,0 +1,1 @@
+export const DEFAULT_LEAVE_BALANCE = 12;
