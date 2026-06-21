@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: leave-management-backend
+    runtime: node
+    plan: free
+    buildCommand: pnpm install --frozen-lockfile; pnpm run build
+    startCommand: pnpm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
