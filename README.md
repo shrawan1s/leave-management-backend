@@ -1,98 +1,171 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Leave Management System — Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A NestJS REST API for managing employee leave requests with role-based access control.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Overview
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+This is the backend service for the Leave Management System built as part of the Nrolled IT Team Selection Assignment. It handles authentication, leave request lifecycle, and admin operations via a RESTful API.
 
-## Project setup
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | NestJS (TypeScript) |
+| Database | MongoDB (Mongoose) |
+| Auth | JWT + Passport.js + bcryptjs |
+| Validation | class-validator, class-transformer |
+| Package Manager | pnpm |
+| Deployment | Render |
+
+---
+
+## Setup
+
+### Prerequisites
+- Node.js >= 18
+- pnpm
+- MongoDB running locally or Atlas URI
+
+### Installation
 
 ```bash
-$ pnpm install
+git clone https://github.com/<your-username>/leave-management-backend.git
+cd leave-management-backend
+pnpm install
 ```
 
-## Compile and run the project
+### Environment Variables
+
+Create a `.env` file in the root:
+
+```env
+MONGODB_URI=mongodb://localhost:27017/leave-management
+JWT_SECRET=your_super_secret_key
+JWT_EXPIRES_IN=1d
+PORT=5000
+CORS_ORIGIN=http://localhost:3000
+```
+
+### Seed Admin User
+
+```bash
+npx ts-node src/seed/seed.ts
+```
+
+This creates the default admin account:
+- Email: `admin@nrolled.com`
+- Password: `Admin@123`
+
+### Run
 
 ```bash
 # development
-$ pnpm run start
+pnpm run start:dev
 
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+# production
+pnpm run build
+pnpm run start:prod
 ```
 
-## Run tests
+API will be available at `http://localhost:5000/api`
 
-```bash
-# unit tests
-$ pnpm run test
+---
 
-# e2e tests
-$ pnpm run test:e2e
+## Architecture
 
-# test coverage
-$ pnpm run test:cov
+```
+src/
+├── app/            → Root app module, health controller, app service
+├── config/         → Centralized environment/config mapping
+├── common/         → Shared constants, enums, interfaces, response helpers
+├── auth/           → JWT auth, guards, register/login
+├── users/          → User schema, users service
+├── leave/          → Leave requests CRUD, approve/reject logic
+└── seed/           → Admin seeder script
+test/
+├── app/            → App module unit/e2e tests
+├── auth/           → Auth module tests
+├── users/          → Users module tests
+├── leave/          → Leave module tests
+└── jest-e2e.json   → E2E Jest config
 ```
 
-## Deployment
+### Configuration & Constants
+- `src/config/app.config.ts` is the only place that reads `process.env`.
+- Shared response messages, event names, defaults, and enums live under `src/common/`.
+- Controllers should use shared response helpers and centralized messages instead of hardcoded response strings.
+- Feature work must update the relevant README, AGENTS, RULES, or PRD sections when behavior, structure, endpoints, env vars, or contracts change.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+### Structure & Comments
+- Runtime files must live in their owning directory, for example root app files live under `src/app/`.
+- Structural code must live in typed folders: `dto/`, `enums/`, `interfaces/`, `schemas/`, `constants/`, and `utils/` as applicable.
+- Exported controllers, services, modules, shared interfaces, config objects, and reusable helpers should include concise JSDoc.
+- Use inline comments only for non-obvious infrastructure or business-rule decisions.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Testing Structure
+- All backend tests live under the root `test/` folder, never inside `src/`.
+- Test subfolders mirror source modules, for example `src/auth/` pairs with `test/auth/`.
+- Unit specs use `*.spec.ts`; e2e specs use `*.e2e-spec.ts`.
+- `pnpm test` runs unit specs from `test/`; `pnpm test:e2e` uses `test/jest-e2e.json`.
 
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+### Auth Flow
+- Employee self-registers → receives JWT
+- Admin is pre-seeded in DB (no registration endpoint)
+- All protected routes use `JwtAuthGuard` + `RolesGuard`
+
+### Leave Lifecycle
+```
+PENDING → APPROVED (balance deducted)
+PENDING → REJECTED (no balance change)
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### API Endpoints
 
-## Resources
+**Auth**
+```
+POST /api/auth/register
+POST /api/auth/login
+GET  /api/auth/me
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+**Employee**
+```
+POST   /api/leave
+GET    /api/leave/my
+GET    /api/leave/balance
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+**Admin**
+```
+GET    /api/leave/all
+PATCH  /api/leave/:id/status
+GET    /api/leave/stats
+```
 
-## Support
+---
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## AI Usage
 
-## Stay in touch
+This project was built with assistance from **Claude (Anthropic)** and **Codex**:
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+- **Architecture design** — Claude helped define the module structure, DB schema, and API contract
+- **Code generation** — Codex used to scaffold NestJS modules, DTOs, guards, and service logic
+- **Business logic review** — Claude reviewed leave balance deduction logic and edge cases
+- **README and documentation** — Claude assisted in writing structured documentation
 
-## License
+All AI-generated code was reviewed, tested, and adjusted manually.
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+---
+
+## Assumptions
+
+- Admin account is pre-seeded; there is no admin registration endpoint
+- Leave balance defaults to **12 days** per employee, shared across all leave types (SICK, CASUAL, EARNED)
+- Days are calculated as calendar days inclusive (`endDate - startDate + 1`), with no weekend or holiday exclusions
+- Only one status transition is allowed: `PENDING → APPROVED` or `PENDING → REJECTED`
+- Approved leaves deduct from balance immediately; rejected leaves make no change
+- No email notifications — status changes are reflected in the UI only
