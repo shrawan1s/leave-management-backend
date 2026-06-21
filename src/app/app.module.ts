@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { appConfig } from '../config/app.config';
 import { AuthModule } from '../auth/auth.module';
+import { LeaveModule } from '../leave/leave.module';
 import { UsersModule } from '../users/users.module';
 
 /**
@@ -14,6 +15,7 @@ import { UsersModule } from '../users/users.module';
     MongooseModule.forRoot(appConfig.mongodbUri),
     UsersModule,
     AuthModule,
+    LeaveModule,
   ],
   controllers: [AppController],
   providers: [AppService],
