@@ -53,7 +53,7 @@ CORS_ORIGIN=http://localhost:3000
 ### Seed Admin User
 
 ```bash
-npx ts-node src/seed/seed.ts
+pnpm run seed:admin
 ```
 
 This creates the default admin account:
@@ -82,8 +82,8 @@ src/
 ├── app/            → Root app module, health controller, app service
 ├── config/         → Centralized environment/config mapping
 ├── common/         → Shared constants, enums, interfaces, response helpers
-├── auth/           → JWT auth, guards, register/login
-├── users/          → User schema, users service
+├── auth/           → JWT auth, DTOs, guards, strategy, register/login/me
+├── users/          → User schema, users service, user interfaces
 ├── leave/          → Leave requests CRUD, approve/reject logic
 └── seed/           → Admin seeder script
 test/
@@ -116,6 +116,35 @@ test/
 - Employee self-registers → receives JWT
 - Admin is pre-seeded in DB (no registration endpoint)
 - All protected routes use `JwtAuthGuard` + `RolesGuard`
+- `JWT_SECRET`, `JWT_EXPIRES_IN`, `JWT_REFRESH_SECRET`, and `JWT_REFRESH_EXPIRES_IN` are read through `src/config/app.config.ts`.
+- Login/register/refresh responses return `{ token, refreshToken, user }`; password hashes are never selected for normal user reads or returned by API responses.
+- `/api/auth/me` validates the bearer token and returns the current user profile.
+- `/api/auth/refresh` is protected by a refresh-token guard and rotates the token pair.
+- `/api/auth/logout` validates the access token before the frontend clears local auth state.
+
+### Auth Module Structure
+```
+src/auth/
+├── constants/      → Auth messages, JWT strategy name, password hashing cost
+├── decorators/     → Role metadata decorator
+├── dto/            → Login and registration DTOs
+├── guards/         → JWT and role guards
+├── interfaces/     → Auth response, JWT payload, request user contracts
+├── strategies/     → Passport JWT strategy
+├── auth.controller.ts
+├── auth.module.ts
+└── auth.service.ts
+```
+
+### Users Module Structure
+```
+src/users/
+├── constants/      → User defaults such as leave balance
+├── interfaces/     → User creation and safe response contracts
+├── schemas/        → Mongoose user schema
+├── users.module.ts
+└── users.service.ts
+```
 
 ### Leave Lifecycle
 ```
@@ -129,6 +158,8 @@ PENDING → REJECTED (no balance change)
 ```
 POST /api/auth/register
 POST /api/auth/login
+POST /api/auth/refresh
+POST /api/auth/logout
 GET  /api/auth/me
 ```
 

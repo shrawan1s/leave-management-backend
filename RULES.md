@@ -50,6 +50,9 @@
 - NEVER expose admin endpoints without `@Roles('ADMIN')`
 - NEVER expose employee endpoints without `@Roles('EMPLOYEE')`
 - `/auth/register` and `/auth/login` are the ONLY public endpoints
+- JWT strategy and auth guards live inside `auth/strategies/` and `auth/guards/`
+- Refresh token strategy and guard live beside access-token auth and must use centralized refresh-token config
+- Role metadata lives in `auth/decorators/`
 
 ## Response Rules
 - ALWAYS return responses in this format:
@@ -59,6 +62,7 @@
 - ALWAYS use shared response helpers and centralized message constants
 - NEVER hardcode reusable response messages in controllers or services
 - NEVER return the password field in any response — always exclude it
+- NEVER select password hashes except in credential verification paths
 - Use appropriate HTTP status codes: 200 (GET), 201 (POST), 400 (bad input), 401 (unauth), 404 (not found)
 
 ## Business Logic Rules
