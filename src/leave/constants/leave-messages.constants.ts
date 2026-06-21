@@ -1,0 +1,17 @@
+export const LEAVE_MESSAGES = {
+  BALANCE_FETCH_SUCCESS: 'Leave balance fetched successfully',
+  CREATE_SUCCESS: 'Leave request created successfully',
+  DELETE_SUCCESS: 'Leave request deleted successfully',
+  END_DATE_BEFORE_START_DATE: 'End date must be equal to or after start date',
+  INSUFFICIENT_BALANCE: 'Requested leave days exceed remaining balance',
+  INVALID_DATE_RANGE: 'Leave dates must be valid calendar dates',
+  INVALID_STATUS_ACTION: 'Only approved or rejected status can be applied',
+  LEAVE_NOT_FOUND: 'Leave request not found',
+  MY_LEAVES_FETCH_SUCCESS: 'Leave requests fetched successfully',
+  ONLY_PENDING_CAN_BE_ACTIONED: 'Only pending leave requests can be actioned',
+  REASON_TOO_SHORT: 'Reason must be at least 10 characters',
+  STATS_FETCH_SUCCESS: 'Leave stats fetched successfully',
+  STATUS_UPDATE_SUCCESS: 'Leave request status updated successfully',
+  UPDATE_SUCCESS: 'Leave request updated successfully',
+  ALL_LEAVES_FETCH_SUCCESS: 'All leave requests fetched successfully',
+} as const;
