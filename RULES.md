@@ -72,6 +72,13 @@
 - ALWAYS calculate `days` on the backend — never trust the client value
 - ALWAYS validate `days <= leaveBalance` before creating a leave request
 - `days = endDate - startDate + 1` (calendar days, inclusive)
+- Employee leave endpoints must be guarded with `JwtAuthGuard`, `RolesGuard`, and `@Roles(UserRole.EMPLOYEE)`
+- Admin leave endpoints must be guarded with `JwtAuthGuard`, `RolesGuard`, and `@Roles(UserRole.ADMIN)`
+- Creating a leave request must not deduct balance; only approval deducts balance
+- Admin list endpoints may filter by leave `status` and leave `type`
+- Admin stats must count total requests by status and total employee users from the users module
+- Admin edits to approved requests must reconcile employee balance by the day difference
+- Admin deletes of approved requests must restore deducted days to the employee balance
 
 ## Error Handling Rules
 - Use NestJS built-in exceptions ONLY:
