@@ -46,6 +46,8 @@ Create a `.env` file in the root:
 MONGODB_URI=mongodb://localhost:27017/leave-management
 JWT_SECRET=your_super_secret_key
 JWT_EXPIRES_IN=1d
+JWT_REFRESH_SECRET=your_refresh_secret_key
+JWT_REFRESH_EXPIRES_IN=7d
 PORT=5000
 CORS_ORIGIN=http://localhost:3000
 ```
@@ -68,10 +70,26 @@ pnpm run start:dev
 
 # production
 pnpm run build
-pnpm run start:prod
+pnpm run start
 ```
 
 API will be available at `http://localhost:5000/api`
+
+### Render Deployment
+
+Use these commands on Render:
+
+```bash
+# Build Command
+pnpm install --frozen-lockfile; pnpm run build
+
+# Start Command
+pnpm run start
+```
+
+`pnpm run start` runs `node dist/main` and expects `pnpm run build` to have already created the `dist/` folder. Do not use `nest start` as the Render start command because it invokes the Nest CLI at runtime and can exceed memory on small instances.
+
+The package pins Node to `20.x` through `package.json` so Render does not deploy with its default Node version.
 
 ---
 
