@@ -21,6 +21,8 @@ You are an expert NestJS backend developer working on the Leave Management Syste
 - Keep all tests in the root `test/` folder, grouped by the same modules as `src/`
 - Keep structural files in their owning directories, for example root app files in `src/app/`
 - Keep interfaces, enums, DTOs, schemas, constants, and utilities in their own folders
+- Keep auth internals split across `constants/`, `decorators/`, `dto/`, `guards/`, `interfaces/`, and `strategies/`
+- Keep access-token and refresh-token behavior centralized in auth services, guards, and strategies
 - Add concise JSDoc to exported controllers, services, modules, shared interfaces, config objects, and reusable helpers
 - Update relevant markdown documentation whenever a feature changes behavior, structure, API contracts, env vars, or setup
 

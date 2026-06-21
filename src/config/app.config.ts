@@ -1,9 +1,16 @@
 import {
   API_PREFIX,
+  DEFAULT_JWT_EXPIRES_IN,
+  DEFAULT_JWT_REFRESH_EXPIRES_IN,
+  DEFAULT_JWT_REFRESH_SECRET,
+  DEFAULT_JWT_SECRET,
   DEFAULT_MONGODB_URI,
   DEFAULT_PORT,
 } from '../common/constants/app.constants';
-import type { AppConfig } from './interfaces/app-config.interface';
+import type {
+  AppConfig,
+  JwtExpiresIn,
+} from './interfaces/app-config.interface';
 
 /**
  * Converts a comma-separated CORS origin list into Nest's CORS option shape.
@@ -36,6 +43,13 @@ function parsePort(port?: string): number {
 export const appConfig: AppConfig = {
   apiPrefix: API_PREFIX,
   corsOrigin: parseCorsOrigin(process.env.CORS_ORIGIN),
+  jwtExpiresIn: (process.env.JWT_EXPIRES_IN ??
+    DEFAULT_JWT_EXPIRES_IN) as JwtExpiresIn,
+  jwtRefreshExpiresIn: (process.env.JWT_REFRESH_EXPIRES_IN ??
+    DEFAULT_JWT_REFRESH_EXPIRES_IN) as JwtExpiresIn,
+  jwtRefreshSecret:
+    process.env.JWT_REFRESH_SECRET ?? DEFAULT_JWT_REFRESH_SECRET,
+  jwtSecret: process.env.JWT_SECRET ?? DEFAULT_JWT_SECRET,
   mongodbUri: process.env.MONGODB_URI ?? DEFAULT_MONGODB_URI,
   port: parsePort(process.env.PORT),
 };
