@@ -194,9 +194,10 @@ export class LeaveService {
   }
 
   /**
-   * Updates editable leave details and reconciles balance for approved requests.
+   * Updates editable details for an employee-owned pending leave request.
    */
   async update(
+    employeeId: string,
     leaveRequestId: string,
     updateLeaveRequestDto: UpdateLeaveRequestDto,
   ): Promise<LeaveRequestResponse> {
@@ -206,6 +207,13 @@ export class LeaveService {
 
     if (!leaveRequest) {
       throw new NotFoundException(LEAVE_MESSAGES.LEAVE_NOT_FOUND);
+    }
+
+    if (
+      leaveRequest.employeeId.toString() !== employeeId ||
+      leaveRequest.status !== LeaveStatus.PENDING
+    ) {
+      throw new BadRequestException(LEAVE_MESSAGES.ONLY_PENDING_CAN_BE_CHANGED);
     }
 
     const startDate = updateLeaveRequestDto.startDate
@@ -219,23 +227,7 @@ export class LeaveService {
       leaveRequest.employeeId.toString(),
     );
 
-    if (leaveRequest.status === LeaveStatus.APPROVED) {
-      if (!user) {
-        throw new BadRequestException(LEAVE_MESSAGES.INSUFFICIENT_BALANCE);
-      }
-
-      const dayDifference = nextDays - leaveRequest.days;
-
-      if (dayDifference > 0 && user.leaveBalance < dayDifference) {
-        throw new BadRequestException(LEAVE_MESSAGES.INSUFFICIENT_BALANCE);
-      }
-
-      user.leaveBalance -= dayDifference;
-      await user.save();
-    } else if (
-      leaveRequest.status === LeaveStatus.PENDING &&
-      (!user || nextDays > user.leaveBalance)
-    ) {
+    if (!user || nextDays > user.leaveBalance) {
       throw new BadRequestException(LEAVE_MESSAGES.INSUFFICIENT_BALANCE);
     }
 
@@ -244,17 +236,15 @@ export class LeaveService {
     leaveRequest.endDate = endDate;
     leaveRequest.days = nextDays;
     leaveRequest.reason = updateLeaveRequestDto.reason ?? leaveRequest.reason;
-    leaveRequest.adminComment =
-      updateLeaveRequestDto.adminComment ?? leaveRequest.adminComment;
     await leaveRequest.save();
 
     return this.toLeaveRequestResponse(leaveRequest, user ?? undefined);
   }
 
   /**
-   * Deletes a leave request and restores balance when deleting an approved leave.
+   * Deletes an employee-owned pending leave request.
    */
-  async remove(leaveRequestId: string): Promise<void> {
+  async remove(employeeId: string, leaveRequestId: string): Promise<void> {
     const leaveRequest = await this.leaveRequestModel
       .findById(leaveRequestId)
       .exec();
@@ -263,15 +253,11 @@ export class LeaveService {
       throw new NotFoundException(LEAVE_MESSAGES.LEAVE_NOT_FOUND);
     }
 
-    if (leaveRequest.status === LeaveStatus.APPROVED) {
-      const user = await this.usersService.findById(
-        leaveRequest.employeeId.toString(),
-      );
-
-      if (user) {
-        user.leaveBalance += leaveRequest.days;
-        await user.save();
-      }
+    if (
+      leaveRequest.employeeId.toString() !== employeeId ||
+      leaveRequest.status !== LeaveStatus.PENDING
+    ) {
+      throw new BadRequestException(LEAVE_MESSAGES.ONLY_PENDING_CAN_BE_CHANGED);
     }
 
     await leaveRequest.deleteOne();

@@ -181,10 +181,14 @@ PENDING → REJECTED (no balance change)
 - `GET /api/leave/all` returns all leave requests for admins and supports optional `status` and `type` filters.
 - `GET /api/leave/stats` returns total request counts by status plus the employee count for the admin dashboard.
 - `PATCH /api/leave/:id/status` accepts `APPROVED` or `REJECTED` with an optional admin comment.
-- `PATCH /api/leave/:id` lets admins edit type, dates, reason, and admin comment. Approved requests reconcile employee balance by the day difference.
-- `DELETE /api/leave/:id` lets admins remove a request. Deleting an approved request restores the deducted days.
 - Only `PENDING` requests can be actioned. Approved requests deduct the employee balance immediately; rejected requests do not change balance.
 - Admin list responses include the employee summary when the employee record is available.
+
+### Employee Leave Edits
+- `PATCH /api/leave/:id` lets employees edit their own `PENDING` requests only.
+- `DELETE /api/leave/:id` lets employees delete their own `PENDING` requests only.
+- Employee edits recalculate inclusive days and revalidate the current shared balance.
+- Approved or rejected requests cannot be edited or deleted by employees.
 
 ### API Endpoints
 
@@ -202,14 +206,14 @@ GET  /api/auth/me
 POST   /api/leave
 GET    /api/leave/my
 GET    /api/leave/balance
+PATCH  /api/leave/:id
+DELETE /api/leave/:id
 ```
 
 **Admin**
 ```
 GET    /api/leave/all
 PATCH  /api/leave/:id/status
-PATCH  /api/leave/:id
-DELETE /api/leave/:id
 GET    /api/leave/stats
 ```
 

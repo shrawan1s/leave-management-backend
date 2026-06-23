@@ -27,8 +27,4 @@ export class UpdateLeaveRequestDto {
   @IsString()
   @MinLength(10)
   reason?: string;
-
-  @IsOptional()
-  @IsString()
-  adminComment?: string;
 }

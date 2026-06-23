@@ -129,15 +129,17 @@ export class LeaveController {
   }
 
   /**
-   * Updates editable leave request details for admins.
+   * Updates an owned pending leave request for the authenticated employee.
    */
   @Patch(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.EMPLOYEE)
   async update(
+    @Req() request: AuthenticatedRequest,
     @Param('id') leaveRequestId: string,
     @Body() updateLeaveRequestDto: UpdateLeaveRequestDto,
   ): Promise<ApiResponse<{ leaveRequest: LeaveRequestResponse }>> {
     const leaveRequest = await this.leaveService.update(
+      request.user.id,
       leaveRequestId,
       updateLeaveRequestDto,
     );
@@ -146,14 +148,15 @@ export class LeaveController {
   }
 
   /**
-   * Deletes a leave request for admins.
+   * Deletes an owned pending leave request for the authenticated employee.
    */
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.EMPLOYEE)
   async remove(
+    @Req() request: AuthenticatedRequest,
     @Param('id') leaveRequestId: string,
   ): Promise<ApiResponse<null>> {
-    await this.leaveService.remove(leaveRequestId);
+    await this.leaveService.remove(request.user.id, leaveRequestId);
 
     return createApiResponse(null, LEAVE_MESSAGES.DELETE_SUCCESS);
   }

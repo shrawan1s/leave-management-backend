@@ -172,7 +172,6 @@ describe('LeaveController', () => {
       startDate: '2026-06-24',
       endDate: '2026-06-25',
       reason: 'Updated leave request reason.',
-      adminComment: 'Updated by admin.',
     };
     const updatedLeaveRequest = {
       ...leaveRequest,
@@ -180,18 +179,18 @@ describe('LeaveController', () => {
       startDate: new Date('2026-06-24'),
       endDate: new Date('2026-06-25'),
       reason: updateLeaveRequestDto.reason,
-      adminComment: updateLeaveRequestDto.adminComment,
     };
     leaveService.update.mockResolvedValue(updatedLeaveRequest);
 
     await expect(
-      leaveController.update(leaveRequest.id, updateLeaveRequestDto),
+      leaveController.update(request, leaveRequest.id, updateLeaveRequestDto),
     ).resolves.toEqual({
       success: true,
       data: { leaveRequest: updatedLeaveRequest },
       message: LEAVE_MESSAGES.UPDATE_SUCCESS,
     });
     expect(leaveService.update).toHaveBeenCalledWith(
+      employeeId,
       leaveRequest.id,
       updateLeaveRequestDto,
     );
@@ -200,11 +199,16 @@ describe('LeaveController', () => {
   it('wraps admin delete responses in the standard envelope', async () => {
     leaveService.remove.mockResolvedValue(undefined);
 
-    await expect(leaveController.remove(leaveRequest.id)).resolves.toEqual({
+    await expect(
+      leaveController.remove(request, leaveRequest.id),
+    ).resolves.toEqual({
       success: true,
       data: null,
       message: LEAVE_MESSAGES.DELETE_SUCCESS,
     });
-    expect(leaveService.remove).toHaveBeenCalledWith(leaveRequest.id);
+    expect(leaveService.remove).toHaveBeenCalledWith(
+      employeeId,
+      leaveRequest.id,
+    );
   });
 });
