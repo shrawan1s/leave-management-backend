@@ -1,0 +1,645 @@
+{
+  "info": {
+    "_postman_id": "9b7d7286-3d11-4d92-a0c9-leave-management",
+    "name": "Leave Management API",
+    "description": "Postman collection for the Leave Management backend. Import this collection, update `baseUrl` if needed, run an auth request to populate tokens, then use the employee and admin leave folders based on the logged-in user's role.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "description": "Public operational endpoint used to verify that the API is running.",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Returns the backend health response. Use this before debugging auth or leave requests.",
+            "url": {
+              "raw": "{{baseUrl}}/{{apiPrefix}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiPrefix}}",
+                "health"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "description": "Authentication requests. Register and login responses store tokens in collection variables for later requests.",
+      "item": [
+        {
+          "name": "Register Employee",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.token) {",
+                  "  pm.collectionVariables.set('accessToken', json.data.token);",
+                  "  pm.collectionVariables.set('refreshToken', json.data.refreshToken);",
+                  "  pm.collectionVariables.set('employeeAccessToken', json.data.token);",
+                  "  pm.collectionVariables.set('employeeRefreshToken', json.data.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Creates a new employee account and returns access and refresh tokens. Admin users are seeded separately and should use the login request.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Employee User\",\n  \"email\": \"employee@example.com\",\n  \"password\": \"Employee@123\",\n  \"department\": \"Engineering\",\n  \"joinDate\": \"2026-06-23\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{apiPrefix}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiPrefix}}",
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.token) {",
+                  "  pm.collectionVariables.set('accessToken', json.data.token);",
+                  "  pm.collectionVariables.set('refreshToken', json.data.refreshToken);",
+                  "  const role = json.data.user && json.data.user.role;",
+                  "  if (role === 'ADMIN') {",
+                  "    pm.collectionVariables.set('adminAccessToken', json.data.token);",
+                  "    pm.collectionVariables.set('adminRefreshToken', json.data.refreshToken);",
+                  "  }",
+                  "  if (role === 'EMPLOYEE') {",
+                  "    pm.collectionVariables.set('employeeAccessToken', json.data.token);",
+                  "    pm.collectionVariables.set('employeeRefreshToken', json.data.refreshToken);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Logs in an admin or employee and stores tokens. Seed admin credentials are `admin@nrolled.com` / `Admin@123` unless the seed constants are changed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@nrolled.com\",\n  \"password\": \"Admin@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{apiPrefix}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiPrefix}}",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "description": "Returns the authenticated user's profile. Use `accessToken` from login or register.",
+            "url": {
+              "raw": "{{baseUrl}}/{{apiPrefix}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiPrefix}}",
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.token) {",
+                  "  pm.collectionVariables.set('accessToken', json.data.token);",
+                  "  pm.collectionVariables.set('refreshToken', json.data.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{refreshToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "description": "Uses the current refresh token to issue a new access token and refresh token pair.",
+            "url": {
+              "raw": "{{baseUrl}}/{{apiPrefix}}/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiPrefix}}",
+                "auth",
+                "refresh"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "description": "Logs out the authenticated user and invalidates the stored refresh token on the backend.",
+            "url": {
+              "raw": "{{baseUrl}}/{{apiPrefix}}/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiPrefix}}",
+                "auth",
+                "logout"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Employee Leave",
+      "description": "Employee-only leave requests. Employees can create leave requests, view their own paginated list, check balance, and edit or delete only their own pending requests.",
+      "item": [
+        {
+          "name": "Create Leave Request",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employeeAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Creates a pending leave request. Balance is checked against the shared annual leave balance and is deducted only after admin approval.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"SICK\",\n  \"startDate\": \"2026-06-24\",\n  \"endDate\": \"2026-06-25\",\n  \"reason\": \"Medical appointment and recovery\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{apiPrefix}}/leave",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiPrefix}}",
+                "leave"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "My Leave Requests",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employeeAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "description": "Returns the authenticated employee's leave requests with pagination. Increase `limit` or change `page` when testing multiple records.",
+            "url": {
+              "raw": "{{baseUrl}}/{{apiPrefix}}/leave/my?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiPrefix}}",
+                "leave",
+                "my"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "One-based page number."
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of rows per page."
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Leave Balance",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employeeAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "description": "Returns the employee's shared leave balance. The default balance is 12 days and applies across sick, casual, and earned leave.",
+            "url": {
+              "raw": "{{baseUrl}}/{{apiPrefix}}/leave/balance",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiPrefix}}",
+                "leave",
+                "balance"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Leave Request",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employeeAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Updates an employee-owned pending leave request. Set `leaveRequestId` from a row returned by `My Leave Requests`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"CASUAL\",\n  \"startDate\": \"2026-06-26\",\n  \"endDate\": \"2026-06-26\",\n  \"reason\": \"Personal work that requires a day off\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{apiPrefix}}/leave/{{leaveRequestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiPrefix}}",
+                "leave",
+                "{{leaveRequestId}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Leave Request",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{employeeAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "description": "Deletes an employee-owned pending leave request. Approved or rejected requests cannot be deleted.",
+            "url": {
+              "raw": "{{baseUrl}}/{{apiPrefix}}/leave/{{leaveRequestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiPrefix}}",
+                "leave",
+                "{{leaveRequestId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin Leave",
+      "description": "Admin-only leave management. Admins can review paginated requests, filter by status or type, view stats, and approve or reject pending requests.",
+      "item": [
+        {
+          "name": "All Leave Requests",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "description": "Returns all leave requests for admin review. `status` and `type` are optional filters; clear either value in Postman to fetch broader results.",
+            "url": {
+              "raw": "{{baseUrl}}/{{apiPrefix}}/leave/all?page=1&limit=10&status=PENDING&type=SICK",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiPrefix}}",
+                "leave",
+                "all"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "One-based page number."
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of rows per page."
+                },
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "description": "Optional status filter: PENDING, APPROVED, or REJECTED."
+                },
+                {
+                  "key": "type",
+                  "value": "SICK",
+                  "description": "Optional leave type filter: SICK, CASUAL, or EARNED."
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Leave Stats",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "description": "Returns aggregate leave counts for the admin dashboard.",
+            "url": {
+              "raw": "{{baseUrl}}/{{apiPrefix}}/leave/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiPrefix}}",
+                "leave",
+                "stats"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Leave Request",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Approves a pending leave request and deducts the request days from the employee's shared balance.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"APPROVED\",\n  \"adminComment\": \"Approved based on available leave balance.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{apiPrefix}}/leave/{{leaveRequestId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiPrefix}}",
+                "leave",
+                "{{leaveRequestId}}",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Leave Request",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminAccessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "description": "Rejects a pending leave request. Rejected requests do not deduct from the employee's balance.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"REJECTED\",\n  \"adminComment\": \"Rejected because the request needs clarification.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/{{apiPrefix}}/leave/{{leaveRequestId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "{{apiPrefix}}",
+                "leave",
+                "{{leaveRequestId}}",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "apiPrefix",
+      "value": "api",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "employeeAccessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "employeeRefreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminAccessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminRefreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "leaveRequestId",
+      "value": "PASTE_LEAVE_REQUEST_ID",
+      "type": "string"
+    }
+  ]
+}

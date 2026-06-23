@@ -217,6 +217,16 @@ PATCH  /api/leave/:id/status
 GET    /api/leave/stats
 ```
 
+### Postman Collection
+
+A ready-to-import Postman collection is available at:
+
+```
+postman/leave-management.postman_collection.json
+```
+
+Import the collection, update the `baseUrl` collection variable when using a deployed API, then run the login or register requests first. Auth scripts store `accessToken`, `refreshToken`, `employeeAccessToken`, and `adminAccessToken` automatically based on the authenticated role. For edit, delete, approve, and reject requests, copy a leave request id from a list response into the `leaveRequestId` collection variable.
+
 ---
 
 ## AI Usage
