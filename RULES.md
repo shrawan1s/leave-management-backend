@@ -76,6 +76,7 @@
 - Admin leave endpoints must be guarded with `JwtAuthGuard`, `RolesGuard`, and `@Roles(UserRole.ADMIN)`
 - Creating a leave request must not deduct balance; only approval deducts balance
 - Admin list endpoints may filter by leave `status` and leave `type`
+- Employee and admin leave list endpoints must use pagination and cap `limit` at 100
 - Admin stats must count total requests by status and total employee users from the users module
 - Employees may edit or delete only their own `PENDING` leave requests
 - Employee edits must recalculate inclusive days and revalidate current shared leave balance

@@ -12,6 +12,7 @@ import type { UpdateLeaveStatusDto } from '../../src/leave/dto/update-leave-stat
 import type { LeaveRequestResponse } from '../../src/leave/interfaces/leave-request-response.interface';
 import type { LeaveStatsResponse } from '../../src/leave/interfaces/leave-stats-response.interface';
 import type { AuthenticatedRequest } from '../../src/auth/interfaces/authenticated-request.interface';
+import type { PaginatedLeaveRequests } from '../../src/leave/interfaces/paginated-leave-requests.interface';
 
 type LeaveServiceMock = Pick<
   LeaveService,
@@ -45,6 +46,13 @@ const leaveRequest: LeaveRequestResponse = {
   status: LeaveStatus.PENDING,
   createdAt: new Date('2026-06-21'),
   updatedAt: new Date('2026-06-21'),
+};
+const paginatedLeaveRequests: PaginatedLeaveRequests = {
+  leaveRequests: [leaveRequest],
+  total: 1,
+  page: 1,
+  limit: 10,
+  totalPages: 1,
 };
 
 describe('LeaveController', () => {
@@ -90,12 +98,18 @@ describe('LeaveController', () => {
   });
 
   it('wraps my leaves responses in the standard envelope', async () => {
-    leaveService.findMyLeaves.mockResolvedValue([leaveRequest]);
+    leaveService.findMyLeaves.mockResolvedValue(paginatedLeaveRequests);
 
-    await expect(leaveController.findMyLeaves(request)).resolves.toEqual({
+    await expect(
+      leaveController.findMyLeaves(request, { page: 1, limit: 10 }),
+    ).resolves.toEqual({
       success: true,
-      data: { leaveRequests: [leaveRequest] },
+      data: paginatedLeaveRequests,
       message: LEAVE_MESSAGES.MY_LEAVES_FETCH_SUCCESS,
+    });
+    expect(leaveService.findMyLeaves).toHaveBeenCalledWith(employeeId, {
+      page: 1,
+      limit: 10,
     });
   });
 
@@ -114,11 +128,11 @@ describe('LeaveController', () => {
       status: LeaveStatus.PENDING,
       type: LeaveType.SICK,
     };
-    leaveService.findAll.mockResolvedValue([leaveRequest]);
+    leaveService.findAll.mockResolvedValue(paginatedLeaveRequests);
 
     await expect(leaveController.findAll(filters)).resolves.toEqual({
       success: true,
-      data: { leaveRequests: [leaveRequest] },
+      data: paginatedLeaveRequests,
       message: LEAVE_MESSAGES.ALL_LEAVES_FETCH_SUCCESS,
     });
     expect(leaveService.findAll).toHaveBeenCalledWith(filters);

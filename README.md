@@ -172,13 +172,13 @@ PENDING → REJECTED (no balance change)
 
 ### Employee Leave Flow
 - `POST /api/leave` creates a `PENDING` request for the authenticated employee.
-- `GET /api/leave/my` returns only the authenticated employee's leave requests.
+- `GET /api/leave/my` returns only the authenticated employee's leave requests with `page` and `limit` pagination.
 - `GET /api/leave/balance` returns the authenticated employee's current shared leave balance.
 - The backend calculates inclusive calendar days and validates `endDate >= startDate`, reason length, and requested days against current balance.
 - Leave balance is not deducted when a request is created; deduction happens only when an admin approves a pending request.
 
 ### Admin Leave Flow
-- `GET /api/leave/all` returns all leave requests for admins and supports optional `status` and `type` filters.
+- `GET /api/leave/all` returns paginated leave requests for admins and supports optional `status`, `type`, `page`, and `limit` query params.
 - `GET /api/leave/stats` returns total request counts by status plus the employee count for the admin dashboard.
 - `PATCH /api/leave/:id/status` accepts `APPROVED` or `REJECTED` with an optional admin comment.
 - Only `PENDING` requests can be actioned. Approved requests deduct the employee balance immediately; rejected requests do not change balance.
