@@ -8,7 +8,7 @@ import {
 import { LeaveType } from '../../common/enums/leave-type.enum';
 
 /**
- * Request body for admin leave request edits.
+ * Request body for employee edits to owned pending leave requests.
  */
 export class UpdateLeaveRequestDto {
   @IsOptional()
@@ -27,8 +27,4 @@ export class UpdateLeaveRequestDto {
   @IsString()
   @MinLength(10)
   reason?: string;
-
-  @IsOptional()
-  @IsString()
-  adminComment?: string;
 }

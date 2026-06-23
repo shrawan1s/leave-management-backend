@@ -172,19 +172,23 @@ PENDING → REJECTED (no balance change)
 
 ### Employee Leave Flow
 - `POST /api/leave` creates a `PENDING` request for the authenticated employee.
-- `GET /api/leave/my` returns only the authenticated employee's leave requests.
+- `GET /api/leave/my` returns only the authenticated employee's leave requests with `page` and `limit` pagination.
 - `GET /api/leave/balance` returns the authenticated employee's current shared leave balance.
 - The backend calculates inclusive calendar days and validates `endDate >= startDate`, reason length, and requested days against current balance.
 - Leave balance is not deducted when a request is created; deduction happens only when an admin approves a pending request.
 
 ### Admin Leave Flow
-- `GET /api/leave/all` returns all leave requests for admins and supports optional `status` and `type` filters.
+- `GET /api/leave/all` returns paginated leave requests for admins and supports optional `status`, `type`, `page`, and `limit` query params.
 - `GET /api/leave/stats` returns total request counts by status plus the employee count for the admin dashboard.
 - `PATCH /api/leave/:id/status` accepts `APPROVED` or `REJECTED` with an optional admin comment.
-- `PATCH /api/leave/:id` lets admins edit type, dates, reason, and admin comment. Approved requests reconcile employee balance by the day difference.
-- `DELETE /api/leave/:id` lets admins remove a request. Deleting an approved request restores the deducted days.
 - Only `PENDING` requests can be actioned. Approved requests deduct the employee balance immediately; rejected requests do not change balance.
 - Admin list responses include the employee summary when the employee record is available.
+
+### Employee Leave Edits
+- `PATCH /api/leave/:id` lets employees edit their own `PENDING` requests only.
+- `DELETE /api/leave/:id` lets employees delete their own `PENDING` requests only.
+- Employee edits recalculate inclusive days and revalidate the current shared balance.
+- Approved or rejected requests cannot be edited or deleted by employees.
 
 ### API Endpoints
 
@@ -202,16 +206,26 @@ GET  /api/auth/me
 POST   /api/leave
 GET    /api/leave/my
 GET    /api/leave/balance
+PATCH  /api/leave/:id
+DELETE /api/leave/:id
 ```
 
 **Admin**
 ```
 GET    /api/leave/all
 PATCH  /api/leave/:id/status
-PATCH  /api/leave/:id
-DELETE /api/leave/:id
 GET    /api/leave/stats
 ```
+
+### Postman Collection
+
+A ready-to-import Postman collection is available at:
+
+```
+postman/leave-management.postman_collection.json
+```
+
+Import the collection, update the `baseUrl` collection variable when using a deployed API, then run the login or register requests first. Auth scripts store `accessToken`, `refreshToken`, `employeeAccessToken`, and `adminAccessToken` automatically based on the authenticated role. For edit, delete, approve, and reject requests, copy a leave request id from a list response into the `leaveRequestId` collection variable.
 
 ---
 

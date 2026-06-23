@@ -20,11 +20,13 @@ import { createApiResponse } from '../common/utils/api-response.util';
 import { LEAVE_MESSAGES } from './constants/leave-messages.constants';
 import { CreateLeaveDto } from './dto/create-leave.dto';
 import { FilterLeaveRequestsDto } from './dto/filter-leave-requests.dto';
+import { PaginatedLeaveQueryDto } from './dto/paginated-leave-query.dto';
 import { UpdateLeaveRequestDto } from './dto/update-leave-request.dto';
 import { UpdateLeaveStatusDto } from './dto/update-leave-status.dto';
 import type { LeaveBalanceResponse } from './interfaces/leave-balance-response.interface';
 import type { LeaveRequestResponse } from './interfaces/leave-request-response.interface';
 import type { LeaveStatsResponse } from './interfaces/leave-stats-response.interface';
+import type { PaginatedLeaveRequests } from './interfaces/paginated-leave-requests.interface';
 import { LeaveService } from './leave.service';
 
 /**
@@ -59,11 +61,15 @@ export class LeaveController {
   @Roles(UserRole.EMPLOYEE)
   async findMyLeaves(
     @Req() request: AuthenticatedRequest,
-  ): Promise<ApiResponse<{ leaveRequests: LeaveRequestResponse[] }>> {
-    const leaveRequests = await this.leaveService.findMyLeaves(request.user.id);
+    @Query() query: PaginatedLeaveQueryDto,
+  ): Promise<ApiResponse<PaginatedLeaveRequests>> {
+    const leaveRequests = await this.leaveService.findMyLeaves(
+      request.user.id,
+      query,
+    );
 
     return createApiResponse(
-      { leaveRequests },
+      leaveRequests,
       LEAVE_MESSAGES.MY_LEAVES_FETCH_SUCCESS,
     );
   }
@@ -88,11 +94,11 @@ export class LeaveController {
   @Roles(UserRole.ADMIN)
   async findAll(
     @Query() filters: FilterLeaveRequestsDto,
-  ): Promise<ApiResponse<{ leaveRequests: LeaveRequestResponse[] }>> {
+  ): Promise<ApiResponse<PaginatedLeaveRequests>> {
     const leaveRequests = await this.leaveService.findAll(filters);
 
     return createApiResponse(
-      { leaveRequests },
+      leaveRequests,
       LEAVE_MESSAGES.ALL_LEAVES_FETCH_SUCCESS,
     );
   }
@@ -129,15 +135,17 @@ export class LeaveController {
   }
 
   /**
-   * Updates editable leave request details for admins.
+   * Updates an owned pending leave request for the authenticated employee.
    */
   @Patch(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.EMPLOYEE)
   async update(
+    @Req() request: AuthenticatedRequest,
     @Param('id') leaveRequestId: string,
     @Body() updateLeaveRequestDto: UpdateLeaveRequestDto,
   ): Promise<ApiResponse<{ leaveRequest: LeaveRequestResponse }>> {
     const leaveRequest = await this.leaveService.update(
+      request.user.id,
       leaveRequestId,
       updateLeaveRequestDto,
     );
@@ -146,14 +154,15 @@ export class LeaveController {
   }
 
   /**
-   * Deletes a leave request for admins.
+   * Deletes an owned pending leave request for the authenticated employee.
    */
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.EMPLOYEE)
   async remove(
+    @Req() request: AuthenticatedRequest,
     @Param('id') leaveRequestId: string,
   ): Promise<ApiResponse<null>> {
-    await this.leaveService.remove(leaveRequestId);
+    await this.leaveService.remove(request.user.id, leaveRequestId);
 
     return createApiResponse(null, LEAVE_MESSAGES.DELETE_SUCCESS);
   }
