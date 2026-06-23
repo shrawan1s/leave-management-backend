@@ -12,12 +12,14 @@ import { UsersService } from '../users/users.service';
 import { LEAVE_MESSAGES } from './constants/leave-messages.constants';
 import type { CreateLeaveDto } from './dto/create-leave.dto';
 import type { FilterLeaveRequestsDto } from './dto/filter-leave-requests.dto';
+import type { PaginatedLeaveQueryDto } from './dto/paginated-leave-query.dto';
 import type { UpdateLeaveRequestDto } from './dto/update-leave-request.dto';
 import type { UpdateLeaveStatusDto } from './dto/update-leave-status.dto';
 import type { LeaveBalanceResponse } from './interfaces/leave-balance-response.interface';
 import type { LeaveRequestEmployee } from './interfaces/leave-request-employee.interface';
 import type { LeaveRequestResponse } from './interfaces/leave-request-response.interface';
 import type { LeaveStatsResponse } from './interfaces/leave-stats-response.interface';
+import type { PaginatedLeaveRequests } from './interfaces/paginated-leave-requests.interface';
 import {
   LeaveRequest,
   type LeaveRequestDocument,
@@ -66,14 +68,29 @@ export class LeaveService {
   /**
    * Returns all leave requests for the authenticated employee.
    */
-  async findMyLeaves(employeeId: string): Promise<LeaveRequestResponse[]> {
-    const leaveRequests = await this.leaveRequestModel
-      .find({ employeeId: new Types.ObjectId(employeeId) })
-      .sort({ createdAt: -1 })
-      .exec();
+  async findMyLeaves(
+    employeeId: string,
+    query: PaginatedLeaveQueryDto,
+  ): Promise<PaginatedLeaveRequests> {
+    const pagination = this.resolvePagination(query);
+    const filter = { employeeId: new Types.ObjectId(employeeId) };
+    const [leaveRequests, total] = await Promise.all([
+      this.leaveRequestModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip(pagination.skip)
+        .limit(pagination.limit)
+        .exec(),
+      this.leaveRequestModel.countDocuments(filter).exec(),
+    ]);
 
-    return leaveRequests.map((leaveRequest) =>
-      this.toLeaveRequestResponse(leaveRequest),
+    return this.toPaginatedLeaveRequests(
+      leaveRequests.map((leaveRequest) =>
+        this.toLeaveRequestResponse(leaveRequest),
+      ),
+      total,
+      pagination.page,
+      pagination.limit,
     );
   }
 
@@ -97,16 +114,22 @@ export class LeaveService {
    */
   async findAll(
     filters: FilterLeaveRequestsDto,
-  ): Promise<LeaveRequestResponse[]> {
-    const leaveRequests = await this.leaveRequestModel
-      .find({
-        ...(filters.status ? { status: filters.status } : {}),
-        ...(filters.type ? { type: filters.type } : {}),
-      })
-      .sort({ createdAt: -1 })
-      .exec();
-
-    return Promise.all(
+  ): Promise<PaginatedLeaveRequests> {
+    const pagination = this.resolvePagination(filters);
+    const query = {
+      ...(filters.status ? { status: filters.status } : {}),
+      ...(filters.type ? { type: filters.type } : {}),
+    };
+    const [leaveRequests, total] = await Promise.all([
+      this.leaveRequestModel
+        .find(query)
+        .sort({ createdAt: -1 })
+        .skip(pagination.skip)
+        .limit(pagination.limit)
+        .exec(),
+      this.leaveRequestModel.countDocuments(query).exec(),
+    ]);
+    const responseLeaveRequests = await Promise.all(
       leaveRequests.map(async (leaveRequest) => {
         const employee = await this.usersService.findById(
           leaveRequest.employeeId.toString(),
@@ -114,6 +137,13 @@ export class LeaveService {
 
         return this.toLeaveRequestResponse(leaveRequest, employee ?? undefined);
       }),
+    );
+
+    return this.toPaginatedLeaveRequests(
+      responseLeaveRequests,
+      total,
+      pagination.page,
+      pagination.limit,
     );
   }
 
@@ -178,6 +208,7 @@ export class LeaveService {
     );
 
     if (updateLeaveStatusDto.status === LeaveStatus.APPROVED) {
+      // Balance is deducted only at approval time, never when a request is created.
       if (!user || user.leaveBalance < leaveRequest.days) {
         throw new BadRequestException(LEAVE_MESSAGES.INSUFFICIENT_BALANCE);
       }
@@ -194,9 +225,10 @@ export class LeaveService {
   }
 
   /**
-   * Updates editable leave details and reconciles balance for approved requests.
+   * Updates editable details for an employee-owned pending leave request.
    */
   async update(
+    employeeId: string,
     leaveRequestId: string,
     updateLeaveRequestDto: UpdateLeaveRequestDto,
   ): Promise<LeaveRequestResponse> {
@@ -206,6 +238,14 @@ export class LeaveService {
 
     if (!leaveRequest) {
       throw new NotFoundException(LEAVE_MESSAGES.LEAVE_NOT_FOUND);
+    }
+
+    if (
+      leaveRequest.employeeId.toString() !== employeeId ||
+      leaveRequest.status !== LeaveStatus.PENDING
+    ) {
+      // Employees can correct only their own requests while admin has not actioned them.
+      throw new BadRequestException(LEAVE_MESSAGES.ONLY_PENDING_CAN_BE_CHANGED);
     }
 
     const startDate = updateLeaveRequestDto.startDate
@@ -219,23 +259,7 @@ export class LeaveService {
       leaveRequest.employeeId.toString(),
     );
 
-    if (leaveRequest.status === LeaveStatus.APPROVED) {
-      if (!user) {
-        throw new BadRequestException(LEAVE_MESSAGES.INSUFFICIENT_BALANCE);
-      }
-
-      const dayDifference = nextDays - leaveRequest.days;
-
-      if (dayDifference > 0 && user.leaveBalance < dayDifference) {
-        throw new BadRequestException(LEAVE_MESSAGES.INSUFFICIENT_BALANCE);
-      }
-
-      user.leaveBalance -= dayDifference;
-      await user.save();
-    } else if (
-      leaveRequest.status === LeaveStatus.PENDING &&
-      (!user || nextDays > user.leaveBalance)
-    ) {
+    if (!user || nextDays > user.leaveBalance) {
       throw new BadRequestException(LEAVE_MESSAGES.INSUFFICIENT_BALANCE);
     }
 
@@ -244,17 +268,15 @@ export class LeaveService {
     leaveRequest.endDate = endDate;
     leaveRequest.days = nextDays;
     leaveRequest.reason = updateLeaveRequestDto.reason ?? leaveRequest.reason;
-    leaveRequest.adminComment =
-      updateLeaveRequestDto.adminComment ?? leaveRequest.adminComment;
     await leaveRequest.save();
 
     return this.toLeaveRequestResponse(leaveRequest, user ?? undefined);
   }
 
   /**
-   * Deletes a leave request and restores balance when deleting an approved leave.
+   * Deletes an employee-owned pending leave request.
    */
-  async remove(leaveRequestId: string): Promise<void> {
+  async remove(employeeId: string, leaveRequestId: string): Promise<void> {
     const leaveRequest = await this.leaveRequestModel
       .findById(leaveRequestId)
       .exec();
@@ -263,15 +285,11 @@ export class LeaveService {
       throw new NotFoundException(LEAVE_MESSAGES.LEAVE_NOT_FOUND);
     }
 
-    if (leaveRequest.status === LeaveStatus.APPROVED) {
-      const user = await this.usersService.findById(
-        leaveRequest.employeeId.toString(),
-      );
-
-      if (user) {
-        user.leaveBalance += leaveRequest.days;
-        await user.save();
-      }
+    if (
+      leaveRequest.employeeId.toString() !== employeeId ||
+      leaveRequest.status !== LeaveStatus.PENDING
+    ) {
+      throw new BadRequestException(LEAVE_MESSAGES.ONLY_PENDING_CAN_BE_CHANGED);
     }
 
     await leaveRequest.deleteOne();
@@ -299,6 +317,36 @@ export class LeaveService {
         (endDate.getTime() - startDate.getTime()) / millisecondsPerDay,
       ) + 1
     );
+  }
+
+  private resolvePagination(query: PaginatedLeaveQueryDto): {
+    limit: number;
+    page: number;
+    skip: number;
+  } {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+
+    return {
+      page,
+      limit,
+      skip: (page - 1) * limit,
+    };
+  }
+
+  private toPaginatedLeaveRequests(
+    leaveRequests: LeaveRequestResponse[],
+    total: number,
+    page: number,
+    limit: number,
+  ): PaginatedLeaveRequests {
+    return {
+      leaveRequests,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   private toLeaveRequestResponse(

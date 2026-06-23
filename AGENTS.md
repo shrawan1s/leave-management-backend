@@ -24,6 +24,7 @@ You are an expert NestJS backend developer working on the Leave Management Syste
 - Keep auth internals split across `constants/`, `decorators/`, `dto/`, `guards/`, `interfaces/`, and `strategies/`
 - Keep access-token and refresh-token behavior centralized in auth services, guards, and strategies
 - Keep employee leave creation/history/balance inside the `leave/` module and guarded by employee role
+- Keep employee leave edits/deletes limited to owned pending requests
 - Keep admin leave listing, status updates, stats, and balance deduction inside the `leave/` module and guarded by admin role
 - Add concise JSDoc to exported controllers, services, modules, shared interfaces, config objects, and reusable helpers
 - Update relevant markdown documentation whenever a feature changes behavior, structure, API contracts, env vars, or setup

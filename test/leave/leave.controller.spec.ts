@@ -12,6 +12,7 @@ import type { UpdateLeaveStatusDto } from '../../src/leave/dto/update-leave-stat
 import type { LeaveRequestResponse } from '../../src/leave/interfaces/leave-request-response.interface';
 import type { LeaveStatsResponse } from '../../src/leave/interfaces/leave-stats-response.interface';
 import type { AuthenticatedRequest } from '../../src/auth/interfaces/authenticated-request.interface';
+import type { PaginatedLeaveRequests } from '../../src/leave/interfaces/paginated-leave-requests.interface';
 
 type LeaveServiceMock = Pick<
   LeaveService,
@@ -45,6 +46,13 @@ const leaveRequest: LeaveRequestResponse = {
   status: LeaveStatus.PENDING,
   createdAt: new Date('2026-06-21'),
   updatedAt: new Date('2026-06-21'),
+};
+const paginatedLeaveRequests: PaginatedLeaveRequests = {
+  leaveRequests: [leaveRequest],
+  total: 1,
+  page: 1,
+  limit: 10,
+  totalPages: 1,
 };
 
 describe('LeaveController', () => {
@@ -90,12 +98,18 @@ describe('LeaveController', () => {
   });
 
   it('wraps my leaves responses in the standard envelope', async () => {
-    leaveService.findMyLeaves.mockResolvedValue([leaveRequest]);
+    leaveService.findMyLeaves.mockResolvedValue(paginatedLeaveRequests);
 
-    await expect(leaveController.findMyLeaves(request)).resolves.toEqual({
+    await expect(
+      leaveController.findMyLeaves(request, { page: 1, limit: 10 }),
+    ).resolves.toEqual({
       success: true,
-      data: { leaveRequests: [leaveRequest] },
+      data: paginatedLeaveRequests,
       message: LEAVE_MESSAGES.MY_LEAVES_FETCH_SUCCESS,
+    });
+    expect(leaveService.findMyLeaves).toHaveBeenCalledWith(employeeId, {
+      page: 1,
+      limit: 10,
     });
   });
 
@@ -114,11 +128,11 @@ describe('LeaveController', () => {
       status: LeaveStatus.PENDING,
       type: LeaveType.SICK,
     };
-    leaveService.findAll.mockResolvedValue([leaveRequest]);
+    leaveService.findAll.mockResolvedValue(paginatedLeaveRequests);
 
     await expect(leaveController.findAll(filters)).resolves.toEqual({
       success: true,
-      data: { leaveRequests: [leaveRequest] },
+      data: paginatedLeaveRequests,
       message: LEAVE_MESSAGES.ALL_LEAVES_FETCH_SUCCESS,
     });
     expect(leaveService.findAll).toHaveBeenCalledWith(filters);
@@ -172,7 +186,6 @@ describe('LeaveController', () => {
       startDate: '2026-06-24',
       endDate: '2026-06-25',
       reason: 'Updated leave request reason.',
-      adminComment: 'Updated by admin.',
     };
     const updatedLeaveRequest = {
       ...leaveRequest,
@@ -180,18 +193,18 @@ describe('LeaveController', () => {
       startDate: new Date('2026-06-24'),
       endDate: new Date('2026-06-25'),
       reason: updateLeaveRequestDto.reason,
-      adminComment: updateLeaveRequestDto.adminComment,
     };
     leaveService.update.mockResolvedValue(updatedLeaveRequest);
 
     await expect(
-      leaveController.update(leaveRequest.id, updateLeaveRequestDto),
+      leaveController.update(request, leaveRequest.id, updateLeaveRequestDto),
     ).resolves.toEqual({
       success: true,
       data: { leaveRequest: updatedLeaveRequest },
       message: LEAVE_MESSAGES.UPDATE_SUCCESS,
     });
     expect(leaveService.update).toHaveBeenCalledWith(
+      employeeId,
       leaveRequest.id,
       updateLeaveRequestDto,
     );
@@ -200,11 +213,16 @@ describe('LeaveController', () => {
   it('wraps admin delete responses in the standard envelope', async () => {
     leaveService.remove.mockResolvedValue(undefined);
 
-    await expect(leaveController.remove(leaveRequest.id)).resolves.toEqual({
+    await expect(
+      leaveController.remove(request, leaveRequest.id),
+    ).resolves.toEqual({
       success: true,
       data: null,
       message: LEAVE_MESSAGES.DELETE_SUCCESS,
     });
-    expect(leaveService.remove).toHaveBeenCalledWith(leaveRequest.id);
+    expect(leaveService.remove).toHaveBeenCalledWith(
+      employeeId,
+      leaveRequest.id,
+    );
   });
 });

@@ -9,6 +9,8 @@ export const LEAVE_MESSAGES = {
   LEAVE_NOT_FOUND: 'Leave request not found',
   MY_LEAVES_FETCH_SUCCESS: 'Leave requests fetched successfully',
   ONLY_PENDING_CAN_BE_ACTIONED: 'Only pending leave requests can be actioned',
+  ONLY_PENDING_CAN_BE_CHANGED:
+    'Only pending leave requests can be edited or deleted',
   REASON_TOO_SHORT: 'Reason must be at least 10 characters',
   STATS_FETCH_SUCCESS: 'Leave stats fetched successfully',
   STATUS_UPDATE_SUCCESS: 'Leave request status updated successfully',
