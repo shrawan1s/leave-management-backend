@@ -208,6 +208,7 @@ export class LeaveService {
     );
 
     if (updateLeaveStatusDto.status === LeaveStatus.APPROVED) {
+      // Balance is deducted only at approval time, never when a request is created.
       if (!user || user.leaveBalance < leaveRequest.days) {
         throw new BadRequestException(LEAVE_MESSAGES.INSUFFICIENT_BALANCE);
       }
@@ -243,6 +244,7 @@ export class LeaveService {
       leaveRequest.employeeId.toString() !== employeeId ||
       leaveRequest.status !== LeaveStatus.PENDING
     ) {
+      // Employees can correct only their own requests while admin has not actioned them.
       throw new BadRequestException(LEAVE_MESSAGES.ONLY_PENDING_CAN_BE_CHANGED);
     }
 
